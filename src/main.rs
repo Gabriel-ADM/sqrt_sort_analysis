@@ -44,18 +44,21 @@ pub fn measure_execution_time<F, R>(closure: F) -> Duration where F: FnOnce() ->
     duration
 }
 
-pub fn sort_and_measure(n: Vec<i32>, qt_avg: i32) {
+pub fn sort_and_measure(n: &Vec<i32>, qt_avg: i32) {
     for i in 0..n.len() {
         let data_file_name = format!(r"src\data\data_ten_to_{}.txt", i + 4);
         let result_file_name = format!(r"src\result\execs_avg_ten_to_{}.csv", i + 4);
         let mut result_file = File::create(result_file_name).expect("Error creating file");
 
-        let data = read_data(&data_file_name);
         for _i in 0..qt_avg {
+            let mut data = read_data(&data_file_name);
+            let mut data_copy = data.clone();
+            let bubble_time = measure_execution_time(|| sqrt_sort(&mut data, "bubble"));
+            let heap_time = measure_execution_time(|| sqrt_sort(&mut data_copy, "heap"));
             let result_string = &format!(
                 "bubble_sort;{:?};heap_sort;{:?};\n",
-                measure_execution_time(|| sqrt_sort(&data, "bubble".to_string())),
-                measure_execution_time(|| sqrt_sort(&data, "heap".to_string()))
+                bubble_time,
+                heap_time
             );
             println!("{:?}", result_string);
             result_file.write_all(result_string.as_bytes()).expect(&"Failed to write file");
@@ -64,18 +67,12 @@ pub fn sort_and_measure(n: Vec<i32>, qt_avg: i32) {
 }
 
 fn main() {
-    let n = vec![
-        10000,
-         100000,
-        1000000,
-        10000000,
-        100000000
-    ];
+    let n = vec![10000, 100000, 1000000, 10000000, 100000000];
     let args: Vec<String> = env::args().collect();
 
     if args.len() >= 2 && args[1] == "generate-data" {
         println!("Generating data...");
         generate_data(&n);
     }
-    sort_and_measure(n, 100)
+    sort_and_measure(&n, 100)
 }

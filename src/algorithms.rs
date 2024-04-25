@@ -1,60 +1,39 @@
-pub fn sqrt_sort(n: &Vec<i32>, sort_type: String) -> Vec<i32> {
+pub fn sqrt_sort(n: &mut Vec<i32>, sort_type: &str) {
     let len = n.len() as f64;
     let sqrt = len.sqrt();
     let mut aux_vecs = vec![];
-    let mut result = vec![];
-    // while partition_size < sqrt {
-    //     println!("{}", partition_size* sqrt);
-    //     let mut aux_vec = vec![];
-    //     for i in (sqrt * partition_size) as usize..(sqrt * (partition_size + 1.0)) as usize {
-    //         aux_vec.push(n[i]);
-    //     }
-    //     if len % sqrt != 0.0 && partition_size == sqrt - 1.0 {
-    //         partition_size += len % sqrt;
-    //     } else {
-    //         partition_size += 1.0;
-    //     }
-
-    //     if sort_type == "bubble" {
-    //         bubble_sort(&mut aux_vec);
-    //     } else if sort_type == "heap" {
-    //         heap_sort(&mut aux_vec);
-    //     } else {
-    //         panic!("Valid sort types are 'heap' and 'bubble'");
-    //     }
-    //     aux_vecs.push(aux_vec);
-    // }
-    for i in 0..sqrt as usize{
-        let start = i * sqrt as usize;
-        let end = (i + 1) * sqrt as usize;
-        let mut aux_vec = n[start..end].to_vec();
+    for chunk in n.chunks(sqrt as usize) {
+        let mut chunk_vec = chunk.to_vec();
         
-        if sort_type == "bubble" {
-            bubble_sort(&mut aux_vec);
-        } else if sort_type == "heap" {
-            heap_sort(&mut aux_vec);
-        } else {
-            panic!("Valid sort types are 'heap' and 'bubble'");
+        match sort_type {
+            "bubble" => bubble_sort(&mut chunk_vec),
+            "heap" => build_max_heap(&mut chunk_vec),
+            _ => panic!("Valid sort types are 'heap' and 'bubble'"),
         }
-        aux_vecs.push(aux_vec);
+
+        aux_vecs.push(chunk_vec);
     }
+    n.clear();
+    
     while !aux_vecs.is_empty() {
-        let (mut biggest, mut biggest_pos): (i32, usize) = (-1, 0);
-        for (i, smaller_vec) in aux_vecs.iter().enumerate() {
-            let bigger_in_vec = smaller_vec[smaller_vec.len() - 1];
-            if bigger_in_vec > biggest {
-                biggest = bigger_in_vec;
-                biggest_pos = i;
+        let mut max_index = 0;
+        for i in 1..aux_vecs.len() {
+            if aux_vecs[i].last() > aux_vecs[max_index].last() {
+                max_index = i;
             }
         }
-        result.insert(0, aux_vecs[biggest_pos].pop().unwrap());
-
-        aux_vecs.retain(|x| !x.is_empty());
+        match sort_type {
+            "bubble" => n.push(aux_vecs[max_index].pop().unwrap()),
+            "heap" => n.push(heap_pop(&mut aux_vecs[max_index])),
+            _ => panic!("Valid sort types are 'heap' and 'bubble'"),
+        }
+        ;
+        if aux_vecs[max_index].is_empty() {
+            aux_vecs.swap_remove(max_index);
+        }
     }
-    // println!("{:?}", result);
-    return result;
+    n.reverse();
 }
-
 pub fn bubble_sort(n: &mut Vec<i32>) {
     let mut swaped = true;
     while swaped {
@@ -70,7 +49,7 @@ pub fn bubble_sort(n: &mut Vec<i32>) {
     }
 }
 
-fn heapify(n: &mut Vec<i32>, point: usize, i: usize) {
+pub fn heapify(n: &mut Vec<i32>, point: usize, i: usize) {
     let (mut largest, left, right) = (i, 2 * i + 1, 2 * i + 2);
     if left < point && n[left] > n[largest] {
         largest = left;
@@ -86,7 +65,32 @@ fn heapify(n: &mut Vec<i32>, point: usize, i: usize) {
     }
 }
 
-pub fn heap_sort(n: &mut Vec<i32>) {
+pub fn build_max_heap(n: &mut Vec<i32>) {
+    let heap_size = n.len();
+    
+    for i in (0..heap_size / 2).rev() {
+        heapify(n, heap_size, i);
+    }
+}
+
+
+pub fn heap_pop(arr: &mut Vec<i32>) -> i32 {    
+    let heap_size = arr.len();
+    
+    // Swap root (maximum element) with the last element
+    arr.swap(0, heap_size - 1);
+    
+    // Extract the maximum element (previously root)
+    let max_value = arr.pop().unwrap(); // Safe to unwrap because the vector is not empty
+    
+    // Restore heap property by heapifying from the root
+    heapify(arr, heap_size - 1, 0);
+    
+    max_value
+}
+
+
+pub fn _heap_sort(n: &mut Vec<i32>) {
     for i in (0..n.len() / 2 + 1).rev() {
         heapify(n, n.len(), i);
     }
